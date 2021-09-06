@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var  rootCmd = &cobra.Command {
+var rootCmd = &cobra.Command {
 	Use: "workload-master",
 	Short: "workload-master master all different kind of workload.",
 	Long: "workload-master can run different kind of database workload, such as go-tpc, go-ycsb, sysbench"
