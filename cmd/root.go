@@ -1,4 +1,4 @@
-package main
+package cmd
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 var rootCmd = &cobra.Command {
 	Use: "workload-master",
 	Short: "workload-master master all different kind of workload.",
-	Long: "workload-master can run different kind of database workload, such as go-tpc, go-ycsb, sysbench"
+	Long: "workload-master can run different kind of database workload, such as go-tpc, go-ycsb, sysbench",
 
 	Run: func(cmd *cobra.Command, args []string) {
 
@@ -22,4 +22,8 @@ func Execute() {
 		fmt.Println(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+
+func init() {
+	rootCmd.AddCommand()
 }
