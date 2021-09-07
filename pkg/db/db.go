@@ -4,6 +4,12 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+
+	"github.com/pingcap/log"
+	"go.uber.org/zap"
+
+	// mysql package
+	_ "github.com/go-sql-driver/mysql"
 )
 
 // Config is the config for database
@@ -14,8 +20,9 @@ type Config struct {
 	Password string
 	Name     string
 
+	Threads int
 	// connection params
-	Params []string
+	Options []string
 }
 
 const (
@@ -24,8 +31,38 @@ const (
 	mysqlDriver = "mysql"
 )
 
-func NewDB(cfg *Config) *sql.DB {
+func NewDB(cfg *Config) (db *sql.DB, err error) {
+	ds := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Name)
+	fullDSN := fmt.Sprintf("%s?multiStatements=true", ds)
+	if len(cfg.Options) > 0 {
+		fullDSN = fmt.Sprintf("%s&%s", fullDSN, cfg.Options)
+	}
 
+	db, err = sql.Open(mysqlDriver, fullDSN)
+	if err != nil {
+		return nil, err
+	}
+
+	err = db.Ping()
+	if err == nil {
+		db.SetMaxIdleConns(cfg.Threads + 1)
+		return db, nil
+	}
+
+	if !strings.Contains(err.Error(), unknownDB) {
+		return nil, err
+	}
+
+	tmpDB, _ := sql.Open(mysqlDriver, ds)
+	defer tmpDB.Close()
+
+	query := createDBDDL + cfg.Name
+	if _, err := tmpDB.Exec(query); err != nil {
+		log.Info("failed to create database", zap.Error(err), zap.String("query", query))
+		return nil, err
+	}
+
+	return db, nil
 }
 
 func CloseDB(db *sql.DB) {
@@ -33,42 +70,3 @@ func CloseDB(db *sql.DB) {
 		db.Close()
 	}
 }
-
-func openDB() {
-	// TODO: support other drivers
-	var (
-		tmpDB *sql.DB
-		err   error
-		ds    = fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", user, password, host, port, dbName)
-	)
-	// allow multiple statements in one query to allow q15 on the TPC-H
-	fullDsn := fmt.Sprintf("%s?multiStatements=true", ds)
-	if len(connParams) > 0 {
-		fullDsn = fmt.Sprintf("%s&%s", fullDsn, connParams)
-	}
-	globalDB, err = sql.Open(mysqlDriver, fullDsn)
-	if err != nil {
-		panic(err)
-	}
-	if err := globalDB.Ping(); err != nil {
-		errString := err.Error()
-		if strings.Contains(errString, unknownDB) {
-			tmpDB, _ = sql.Open(mysqlDriver, ds)
-			defer tmpDB.Close()
-			if _, err := tmpDB.Exec(createDBDDL + dbName); err != nil {
-				panic(fmt.Errorf("failed to create database, err %v\n", err))
-			}
-		} else {
-			globalDB = nil
-		}
-	} else {
-		globalDB.SetMaxIdleConns(threads + acThreads + 1)
-	}
-}
-
-// func closeDB() {
-// 	if globalDB != nil {
-// 		globalDB.Close()
-// 	}
-// 	globalDB = nil
-// }
