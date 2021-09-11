@@ -6,8 +6,12 @@ func RegisterLargeTxn(root *cobra.Command) {
 	cmd := &cobra.Command{
 		Use: "large_txn",
 		Run: func(cmd *cobra.Command, args []string) {
-
+			runLargeTxn()
 		},
 	}
 	root.AddCommand(cmd)
+}
+
+func runLargeTxn() {
+
 }
