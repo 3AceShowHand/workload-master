@@ -13,7 +13,7 @@ import (
 )
 
 // Config is the config for database
-type Config struct {
+type Options struct {
 	Host     string
 	Port     int
 	User     string
@@ -31,11 +31,11 @@ const (
 	mysqlDriver = "mysql"
 )
 
-func NewDB(cfg *Config) (db *sql.DB, err error) {
-	ds := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Name)
+func NewDB(o *Options) (db *sql.DB, err error) {
+	ds := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s", o.User, o.Password, o.Host, o.Port, o.Name)
 	fullDSN := fmt.Sprintf("%s?multiStatements=true", ds)
-	if len(cfg.Options) > 0 {
-		fullDSN = fmt.Sprintf("%s&%s", fullDSN, cfg.Options)
+	if len(o.Options) > 0 {
+		fullDSN = fmt.Sprintf("%s&%s", fullDSN, o.Options)
 	}
 
 	db, err = sql.Open(mysqlDriver, fullDSN)
@@ -45,7 +45,7 @@ func NewDB(cfg *Config) (db *sql.DB, err error) {
 
 	err = db.Ping()
 	if err == nil {
-		db.SetMaxIdleConns(cfg.Threads + 1)
+		db.SetMaxIdleConns(o.Threads + 1)
 		return db, nil
 	}
 
@@ -56,7 +56,7 @@ func NewDB(cfg *Config) (db *sql.DB, err error) {
 	tmpDB, _ := sql.Open(mysqlDriver, ds)
 	defer tmpDB.Close()
 
-	query := createDBDDL + cfg.Name
+	query := createDBDDL + o.Name
 	if _, err := tmpDB.Exec(query); err != nil {
 		log.Info("failed to create database", zap.Error(err), zap.String("query", query))
 		return nil, err

@@ -18,13 +18,12 @@ func printVersion() {
 	fmt.Println("Release version:", version)
 }
 
-func RegisterVersionInfo(root *cobra.Command) {
-	cmd := &cobra.Command{
-		Use: "version",
+func NewCmdVersion() *cobra.Command {
+	return &cobra.Command{
+		Use:   "version",
+		Short: "Output version information",
 		Run: func(cmd *cobra.Command, args []string) {
 			printVersion()
 		},
 	}
-	root.AddCommand(cmd)
 }
-

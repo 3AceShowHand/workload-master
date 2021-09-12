@@ -4,21 +4,50 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"time"
 
+	"github.com/3AceShowHand/workload-master/pkg/db"
+	"github.com/pingcap/log"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
 )
 
-func RegisterSQLCoverage(root *cobra.Command) {
+func NewCmdSQLCoverage() *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "sql_coverage",
-		Run: func(cmd *cobra.Command, args []string) {
-			runSQLCoverage()
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := executeSQLCoverage(); err != nil {
+				log.Error("execute SQL Coverage failed", zap.Error(err))
+				return err
+			}
+			return nil
 		},
 	}
-	root.AddCommand(cmd)
+
+	return cmd
 }
 
-func runSQLCoverage() {
+func executeSQLCoverage() error {
+	database, err := db.NewDB(&db.Options{
+		Host:     "",
+		Port:     0,
+		User:     "",
+		Password: "",
+		Name:     "",
+		Threads:  0,
+		Options:  nil,
+	})
+	if err != nil {
+		return err
+	}
+	task := &SQLCoverageTask{
+		db:      database,
+		dbName:  "",
+		threads: 0,
+	}
+
+	ctx, cancel := context.WithTimeout(globalCtx, time.Duration())
+	defer cancel()
 
 }
 

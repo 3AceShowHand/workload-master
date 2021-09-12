@@ -9,3 +9,6 @@ type Task interface {
 	Run(ctx context.Context, threadID int) error
 	DBName() string
 }
+
+type Options struct {
+}
